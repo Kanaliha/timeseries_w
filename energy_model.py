@@ -80,9 +80,6 @@ class EnergyModel:
         # plot results
         data_melted = self.result.melt(id_vars='Time', value_vars=self.result, var_name='Variable', value_name='Value')
         fig = px.line(data_melted, x='Time', y='Value', color='Variable', title=self.quantity, line_shape='linear')
-        # for trace in fig.data:
-        #     trace.update(connectgaps=False)
-        # fig.update_layout(height=800)
         fig.show()
     
     def run(self):
