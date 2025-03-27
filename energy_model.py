@@ -48,6 +48,7 @@ class EnergyModel:
         """
         Add additional modelling features to the data
         """
+        # note: adding just very basic features. Many other features make sense for our problem, but lets keep it simple.
         self.data_df['day_of_year'] = self.data_df['Time'].dt.day_of_year
         self.data_df['day_of_week'] = self.data_df['Time'].dt.day_of_week
         self.data_df['is_weekend'] = self.data_df['day_of_week'] > 4 # 5 for Saturday and 6 for Sunday

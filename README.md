@@ -43,6 +43,3 @@ To get started with this project:
     ```bash
     # usage example
     python energy_model.py --input .\test_data\SG.csv --quantity Consumption
-
-**Model output**
-The model opens a plot displaying the data for the chosen quantity together with a fitted model. It also returns information about the accuracy of the created model according to the Coefficient of Determination (R²) metric.
