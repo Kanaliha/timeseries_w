@@ -7,7 +7,26 @@ import plotly.express as px
 # TODO: checking of inputs + error handling
 
 class EnergyModel:
+    """
+    A class to model energy data using a RandomForestRegressor.
+
+    Attributes:
+        data_file_path (str): Path to the input CSV file.
+        quantity (str): The quantity to model (e.g., 'Consumption').
+        data_df (pd.DataFrame): DataFrame to store the loaded data.
+        model_features (list): List of features to use in the model.
+        model (RandomForestRegressor): The trained model.
+        result (pd.DataFrame): DataFrame to store the results.
+    """
+
     def __init__(self, data_file_path,quantity):
+        """
+        Constructor
+
+        Args:
+            data_file_path (str): Path to the input CSV file.
+            quantity (str): The quantity to model (e.g., 'Consumption').
+        """
         self.data_file_path = data_file_path
         self.quantity = quantity
         self.data_df = None
@@ -16,6 +35,9 @@ class EnergyModel:
         self.result = pd.DataFrame()
 
     def load_data(self):
+        """
+        Load data from the CSV file into Pandas Dataframe.
+        """
         self.data_df = pd.read_csv(self.data_file_path, sep=';')
         self.data_df['Time'] = pd.to_datetime(self.data_df['Time'], utc=True)
 
@@ -23,6 +45,9 @@ class EnergyModel:
         print('Data loaded successfully')
 
     def add_features(self):
+        """
+        Add additional modelling features to the data
+        """
         self.data_df['day_of_year'] = self.data_df['Time'].dt.day_of_year
         self.data_df['day_of_week'] = self.data_df['Time'].dt.day_of_week
         self.data_df['is_weekend'] = self.data_df['day_of_week'] > 4 # 5 for Saturday and 6 for Sunday
@@ -31,17 +56,25 @@ class EnergyModel:
         self.model_features = ['day_of_year','day_of_week','hours','is_weekend']
 
     def clean_data(self):
+        """
+        Clean the data by dropping rows with missing values and ensuring complete samples per day.
+        """
         # note: there are better ways handling missing variables, but lets use just deleting NaNs for the simplicity
         self.data_df.dropna(inplace=True)
 
-        # let's use days with complete samples. Again for the simplicity
+        # let's use only days with complete samples. Again for the simplicity
         samples_per_day = self.data_df['day_of_year'].value_counts()
         expected_samples = 2*24 # two samples per hour
         days_to_drop = samples_per_day[samples_per_day < expected_samples].index
         self.data_df = self.data_df[~self.data_df['day_of_year'].isin(days_to_drop)]
 
     def prepare_data(self):
-        # prepare data for Modelling
+        """
+        Prepare the data for modeling by splitting it into training and testing sets.
+
+        Returns:
+            tuple: X_train, X_test, y_train, y_test
+        """
 
         # split training and evaluation data. 80% train, 20% test
         complete_days = self.data_df['day_of_year'].unique()
@@ -62,11 +95,28 @@ class EnergyModel:
         return X_train,X_test,y_train,y_test
     
     def train_model(self,X_train,y_train):
+        """
+        Train the RandomForestRegressor model.
+
+        Args:
+            X_train (pd.DataFrame): Training features.
+            y_train (pd.Series): Training target.
+        """
         print('Fitting model...')
         self.model = RandomForestRegressor(random_state=2)
         self.model.fit(X_train,y_train)
 
     def evaluate_model(self,X_test,y_test):
+        """
+        Evaluate the trained model and store the results.
+
+        Args:
+            X_test (pd.DataFrame): Testing features.
+            y_test (pd.Series): Testing target.
+
+        Returns:
+            float: Accuracy of the model in percentage.
+        """
         print('Evaluating model...')
         y_pred = self.model.predict(X_test)
         accuracy = r2_score(y_test, y_pred) * 100 # [%]
@@ -76,13 +126,18 @@ class EnergyModel:
 
         return accuracy
     
-    def plot_results(self,):
-        # plot results
+    def plot_results(self):
+        """
+        Plot the measured and predicted values using Plotly.
+        """
         data_melted = self.result.melt(id_vars='Time', value_vars=self.result, var_name='Variable', value_name='Value')
         fig = px.line(data_melted, x='Time', y='Value', color='Variable', title=self.quantity, line_shape='linear')
         fig.show()
     
     def run(self):
+        """
+        Run the entire pipeline.
+        """
         self.load_data()
         self.add_features()
         self.clean_data()
